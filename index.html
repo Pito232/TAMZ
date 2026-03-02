@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" rel="stylesheet">
+</head>
+
+<body>
+    <ion-app>
+
+        <ion-header>
+            <ion-toolbar>
+                <ion-title>Termíny</ion-title>
+            </ion-toolbar>
+        </ion-header>
+
+        <ion-content class="ion-padding">
+
+            <ion-card>
+                <ion-card-content>
+                    <ion-text id="actualDate" style="display: block; font-size:110%; padding-bottom: 5px">
+                        Dnešní datum: Načítám...
+                    </ion-text>
+                </ion-card-content>
+            </ion-card>
+
+            <ion-card>
+                <ion-card-header>
+                    <ion-card-title>Důležité termíny</ion-card-title>
+                </ion-card-header>
+                <ion-card-content id="termsContainer">
+                    </ion-card-content>
+            </ion-card>
+
+            <ion-card>
+                <ion-card-header>
+                    <ion-card-title>Průběh letního semestru</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                    <ion-progress-bar id="semesterProgress" value="0"></ion-progress-bar>
+                    <ion-text id="progressText" style="display: block; text-align: center; margin-top: 10px;">
+                        0 %
+                    </ion-text>
+                </ion-card-content>
+            </ion-card>
+
+            <ion-card>
+                <ion-card-content>
+                    <h2 style="text-align: center; margin-bottom: 5px;">Do konce semestru zbývá:</h2>
+                    <ion-text color="primary" style="display: block; font-size:150%; text-align: center; font-weight: bold;" id="countdownText">
+                        Načítám...
+                    </ion-text>
+                </ion-card-content>
+            </ion-card>
+
+            <ion-card>
+                <ion-card-content>
+                    <ion-text style="display: block; font-size:150%; text-align: center;">
+                        Zadej datum
+                    </ion-text>
+                    <p style="text-align: center; padding-bottom: 5px">
+                        <ion-datetime-button datetime="datetime"></ion-datetime-button>
+                        <ion-modal>
+                            <ion-datetime id="datetime" locale="cs-CZ" presentation="date" show-default-buttons="true"></ion-datetime>
+                        </ion-modal>
+                    </p>
+                    <ion-text id="selectedDate" style="display: block; font-size:110%; padding-top: 5px; padding-bottom: 5px">
+                        Zvolené datum: ---
+                    </ion-text>
+                </ion-card-content>
+            </ion-card>
+
+        </ion-content>
+
+    </ion-app>
+
+    <script>
+        
+        const today = new Date();
+        
+        
+        let actualDateHtml = document.getElementById('actualDate');
+        actualDateHtml.innerText = `Dnešní datum: ${today.toLocaleDateString('cs-CZ')}`;
+
+        
+        const terms = [
+            { name: 'Vyzvednout balík', date: new Date('2026-02-26') },
+            { name: 'Odevzdání projektu PKS', date: new Date('2026-03-04') },
+            { name: 'Odevzdání projektu VI1', date: new Date('2026-03-16') }, 
+            { name: 'Zápočtový týden', date: new Date('2026-05-11') },
+            { name: 'Konec zkouškového', date: new Date('2026-06-26') }
+        ];
+
+        let termsContainer = document.getElementById('termsContainer');
+        let htmlContent = '';
+        let showToast = false; 
+
+        terms.forEach(term => {
+            
+            let timeDiff = term.date.getTime() - today.getTime();
+            let daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24)); 
+            
+            //Určení barvy
+            let color = '';
+            if (daysLeft < 0) {
+                color = 'medium'; 
+                daysLeft = 'Proběhlo';
+            } else if (daysLeft <= 7) {
+                color = 'danger'; 
+                showToast = true; 
+            } else if (daysLeft <= 30) {
+                color = 'warning'; 
+            } else {
+                color = 'success'; 
+            }
+
+            
+            let daysText = typeof daysLeft === 'number' ? `(za ${daysLeft} dnů)` : `(${daysLeft})`;
+            htmlContent += `
+                <div style="margin-bottom: 10px;">
+                    <strong>${term.name}:</strong> ${term.date.toLocaleDateString('cs-CZ')} 
+                    <ion-text color="${color}"> ${daysText} </ion-text>
+                </div>
+            `;
+        });
+
+        termsContainer.innerHTML = htmlContent;
+
+        //Toast
+        if (showToast) {
+           
+            setTimeout(() => {
+                const toast = document.createElement('ion-toast');
+                toast.message = 'Pozor! Některý z termínů je za méně než 7 dnů!';
+                toast.duration = 4000;
+                toast.color = 'danger';
+                toast.position = 'top';
+                
+                document.body.appendChild(toast);
+                toast.present();
+            }, 1000);
+        }
+
+        //Progress bar 
+        const semesterStart = new Date('2026-02-16'); 
+        const semesterEnd = new Date('2026-05-16');   
+
+        let totalSemesterTime = semesterEnd.getTime() - semesterStart.getTime();
+        let timePassed = today.getTime() - semesterStart.getTime();
+        
+        let progress = timePassed / totalSemesterTime;
+        
+        
+        if (progress < 0) progress = 0;
+        if (progress > 1) progress = 1;
+
+        let progressBarHtml = document.getElementById('semesterProgress');
+        let progressTextHtml = document.getElementById('progressText');
+        
+        progressBarHtml.value = progress;
+        progressTextHtml.innerText = `${Math.round(progress * 100)} % za námi`;
+
+        //  Živý odpočet 
+        let countdownTextHtml = document.getElementById('countdownText');
+
+        function updateCountdown() {
+            let now = new Date().getTime();
+            let distance = semesterEnd.getTime() - now;
+
+            if (distance < 0) {
+                countdownTextHtml.innerText = "Semestr skončil!";
+                return;
+            }
+
+            let days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            countdownTextHtml.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        
+        let dateTimeHtml = document.getElementById('datetime');
+        let selectedDateHtml = document.getElementById('selectedDate'); 
+
+        dateTimeHtml.addEventListener("ionChange", function (e) {
+            let selected = new Date(this.value);
+            selectedDateHtml.innerText = `Zvolené datum: ${selected.toLocaleDateString('cs-CZ')}`;
+        });
+
+    </script>
+
+</body>
+
+</html>
