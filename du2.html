@@ -11,7 +11,7 @@
     <ion-app>
         <ion-header>
             <ion-toolbar color="primary">
-                <ion-title>Local Storage Úkol</ion-title>
+                <ion-title>Local Storage s prioritou</ion-title>
                 <ion-buttons slot="end">
                     <ion-badge id="item-count" color="light">0</ion-badge>
                 </ion-buttons>
@@ -19,9 +19,18 @@
         </ion-header>
 
         <ion-content class="ion-padding">
-            <ion-item lines="full">
-                <ion-label position="floating">Název záznamu</ion-label>
-                <ion-input id="input-task" placeholder="Napiš úkol..."></ion-input>
+            <ion-item>
+                <ion-label position="floating">Název úkolu</ion-label>
+                <ion-input id="input-task" placeholder="Co je potřeba udělat?"></ion-input>
+            </ion-item>
+
+            <ion-item>
+                <ion-label>Priorita</ion-label>
+                <ion-select id="select-priority" value="normal">
+                    <ion-select-option value="high">Vysoká</ion-select-option>
+                    <ion-select-option value="normal">Normální</ion-select-option>
+                    <ion-select-option value="low">Nízká</ion-select-option>
+                </ion-select>
             </ion-item>
 
             <div class="ion-margin-top">
@@ -29,39 +38,61 @@
                 <ion-button expand="block" color="danger" fill="outline" onclick="clearAll()">Smazat vše</ion-button>
             </div>
 
-            <h3 class="ion-padding-start">Seznam úkolů:</h3>
-            
-            <ion-list id="ionic-list" inset="true">
-                </ion-list>
+            <ion-list id="ionic-list" inset="true"></ion-list>
         </ion-content>
     </ion-app>
 
     <script>
-        
-        window.addEventListener('load', () => {
-            showItems();
-        });
+        window.addEventListener('load', () => showItems());
 
-        
+        function addTask() {
+            const input = document.getElementById('input-task');
+            const select = document.getElementById('select-priority');
+            
+            if (input.value.trim() === "") return;
+
+            // Vytvoření objektu záznamu
+            const taskObject = {
+                name: input.value,
+                priority: select.value,
+                date: new Date().toLocaleString('cs-CZ')
+            };
+
+            // Uložení jako JSON string
+            const key = "task_" + Date.now();
+            localStorage.setItem(key, JSON.stringify(taskObject));
+            
+            input.value = ""; 
+            showItems();
+        }
+
         function showItems() {
             const list = document.getElementById('ionic-list');
             const badge = document.getElementById('item-count');
-            list.innerHTML = ""; 
-            
+            list.innerHTML = "";
             
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                let value = localStorage.getItem(key);
+                if (!key.startsWith("task_")) continue; // Ignorovat jiné záznamy
 
-                
+                // Načtení a parsování JSONu
+                let taskData = JSON.parse(localStorage.getItem(key));
+
+                // Určení barvy podle priority
+                let color = "medium";
+                if (taskData.priority === "high") color = "danger";
+                if (taskData.priority === "low") color = "success";
+
                 let slidingItem = document.createElement("ion-item-sliding");
-                
                 slidingItem.innerHTML = `
                     <ion-item>
                         <ion-label>
-                            <h2>${value}</h2>
-                            <p>Klíč: ${key}</p>
+                            <h2>${taskData.name}</h2>
+                            <p>${taskData.date}</p>
                         </ion-label>
+                        <ion-chip color="${color}" slot="end">
+                            <ion-label>${taskData.priority.toUpperCase()}</ion-label>
+                        </ion-chip>
                     </ion-item>
                     <ion-item-options side="end">
                         <ion-item-option color="danger" onclick="deleteItem('${key}')">
@@ -71,38 +102,16 @@
                 `;
                 list.appendChild(slidingItem);
             }
-            
-            // Aktualizace badge
             badge.innerText = localStorage.length;
         }
 
-        
-        function addTask() {
-            const input = document.getElementById('input-task');
-            const text = input.value;
-
-            if (text.trim() === "") {
-                alert("Zadejte prosím text!");
-                return;
-            }
-
-            // Jako klíč je použít Timestamp 
-            const key = "task_" + Date.now();
-            localStorage.setItem(key, text);
-            
-            input.value = ""; 
-            showItems();      
-        }
-
-    
         function deleteItem(key) {
             localStorage.removeItem(key);
             showItems();
         }
 
-        
         function clearAll() {
-            if (confirm("Opravdu chcete smazat všechny záznamy?")) {
+            if (confirm("Smazat vše?")) {
                 localStorage.clear();
                 showItems();
             }
