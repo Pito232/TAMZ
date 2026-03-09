@@ -54,19 +54,19 @@
                     </ion-item>
 
                     <ion-item lines="none">
-                        <ion-label>Váha: <b id="w-val">80</b> kg</ion-label>
+                        <ion-label>Váha: kg</ion-label>
                     </ion-item>
                     
-                    <ion-range id="range-weight" min="30" max="150" value="80" pin="true" onIonInput="document.getElementById('w-val').innerText = this.value">
+                    <ion-range id="range-weight" min="10" max="300" value="80" pin="true" onIonInput="document.getElementById('w-val').innerText = this.value">
                     <ion-icon slot="start" name="fitness-outline"></ion-icon>
                         
                     </ion-range>
 
                     <ion-item lines="none">
-                        <ion-label>Výška: <b id="h-val">180</b> cm</ion-label>
+                        <ion-label>Výška: cm</ion-label>
                     </ion-item>
                     
-                    <ion-range id="range-height" min="100" max="220" value="180" pin="true" color="success" onIonInput="document.getElementById('h-val').innerText = this.value">
+                    <ion-range id="range-height" min="10" max="350" value="180" pin="true" color="success" onIonInput="document.getElementById('h-val').innerText = this.value">
                     <ion-icon slot="start" name="resize-outline"></ion-icon>
                     </ion-range>
 
@@ -126,37 +126,52 @@
             showHistory();
         }
 
-        function showHistory() {
-            const list = document.getElementById('bmi-history-list');
-            list.innerHTML = "";
+        
+function showHistory() {
+    const list = document.getElementById('bmi-history-list');
+    list.innerHTML = "";
 
-            // Seřazení klíčů od nejnovějšího (bonus)
-            const keys = Object.keys(localStorage)
-                               .filter(k => k.startsWith("pro_bmi_"))
-                               .sort().reverse();
+    // Seřazení klíčů od nejnovějšího
+    const keys = Object.keys(localStorage)
+                       .filter(k => k.startsWith("pro_bmi_"))
+                       .sort().reverse();
 
-            keys.forEach(key => {
-                const data = JSON.parse(localStorage.getItem(key));
+    keys.forEach(key => {
+        const data = JSON.parse(localStorage.getItem(key));
+        
+        // Určení barvy pozadí podle uložené barvy (success, warning, danger)
+        // Využijeme CSS proměnné Ionicu, aby to vypadalo dobře
+        let bgColor = "var(--ion-color-success-tint)"; // Výchozí zelená (jemná)
+        if (data.color === "warning") bgColor = "var(--ion-color-warning-tint)"; // Žlutá
+        if (data.color === "danger") bgColor = "var(--ion-color-danger-tint)";   // Červená
+
+        // Vytvoříme kartu místo položky seznamu
+        const card = document.createElement("ion-card");
+        card.style.background = bgColor; // Nastavení barvy pozadí
+        card.style.marginBottom = "15px";
+
+        card.innerHTML = `
+            <ion-card-header>
+                <ion-card-subtitle style="color: #333;">${data.date}</ion-card-subtitle>
+                <ion-card-title style="color: #000; font-weight: bold;">
+                    BMI: ${data.bmi} — ${data.category}
+                </ion-card-title>
+            </ion-card-header>
+
+            <ion-card-content style="color: #333;">
+                <p><b>${data.gender}</b>, ${data.age} let</p>
+                <p>Naměřeno: ${data.weight} kg na ${data.height} cm</p>
                 
-                const slidingItem = document.createElement("ion-item-sliding");
-                slidingItem.innerHTML = `
-                    <ion-item>
-                        <ion-label>
-                            <h2><strong>${data.bmi}</strong> — ${data.category}</h2>
-                            <p>${data.gender}, ${data.age} let | ${data.weight}kg, ${data.height}cm</p>
-                            <small>${data.date}</small>
-                        </ion-label>
-                        <ion-badge color="${data.color}" slot="end">BMI</ion-badge>
-                    </ion-item>
-                    <ion-item-options side="end">
-                        <ion-item-option color="danger" onclick="deleteEntry('${key}')">
-                            <ion-icon slot="icon-only" name="trash"></ion-icon>
-                        </ion-item-option>
-                    </ion-item-options>
-                `;
-                list.appendChild(slidingItem);
-            });
-        }
+                <div style="text-align: right;">
+                    <ion-button fill="clear" color="light" onclick="deleteEntry('${key}')">
+                        <ion-icon slot="icon-only" name="trash"></ion-icon>
+                    </ion-button>
+                </div>
+            </ion-card-content>
+        `;
+        list.appendChild(card);
+    });
+}
 
         function deleteEntry(key) {
             localStorage.removeItem(key);
