@@ -6,32 +6,53 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
     <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" rel="stylesheet">
+    <style>
+        .value-display { font-weight: bold; color: var(--ion-color-primary); }
+    </style>
 </head>
 <body>
     <ion-app>
         <ion-header>
-            <ion-toolbar color="tertiary">
-                <ion-title>BMI Historie</ion-title>
+            <ion-toolbar color="secondary">
+                <ion-title>BMI Profi Kalkulačka</ion-title>
             </ion-toolbar>
-        </ion-header>
+        </header>
 
         <ion-content class="ion-padding">
             <ion-item>
-                <ion-label position="floating">Váha (kg)</ion-label>
-                <ion-input id="bmi-weight" type="number" placeholder="Např. 80"></ion-input>
-            </ion-item>
-            <ion-item>
-                <ion-label position="floating">Výška (cm)</ion-label>
-                <ion-input id="bmi-height" type="number" placeholder="Např. 180"></ion-input>
+                <ion-label>Pohlaví</ion-label>
+                <ion-select id="gender" value="muz">
+                    <ion-select-option value="muz">Muž</ion-select-option>
+                    <ion-select-option value="zena">Žena</ion-select-option>
+                </ion-select>
             </ion-item>
 
-            <div class="ion-margin-top">
-                <ion-button expand="block" onclick="calculateBMI()">Vypočítat a uložit</ion-button>
-                <ion-button expand="block" color="danger" fill="clear" onclick="clearHistory()">Smazat historii</ion-button>
-            </div>
+            <ion-item>
+                <ion-label position="floating">Věk</ion-label>
+                <ion-input id="age" type="number" value="25"></ion-input>
+            </ion-item>
+
+            <ion-item lines="none" class="ion-margin-top">
+                <ion-label>Váha: <span id="w-val" class="value-display">80</span> kg</ion-label>
+            </ion-item>
+            <ion-range id="range-weight" min="30" max="150" value="80" pin="true" 
+                       onionChange="document.getElementById('w-val').innerText = this.value">
+                <ion-icon slot="start" name="fitness-outline"></ion-icon>
+            </ion-range>
+
+            <ion-item lines="none">
+                <ion-label>Výška: <span id="h-val" class="value-display">180</span> cm</ion-label>
+            </ion-item>
+            <ion-range id="range-height" min="100" max="220" value="180" pin="true" color="success"
+                       onionChange="document.getElementById('h-val').innerText = this.value">
+                <ion-icon slot="start" name="man-outline"></ion-icon>
+            </ion-range>
+
+            <ion-button expand="block" class="ion-margin-top" onclick="calculateBMI()">Vypočítat a uložit do historie</ion-button>
+            <ion-button expand="block" fill="clear" color="danger" onclick="clearHistory()">Vymazat historii</ion-button>
 
             <h3 class="ion-padding-start">Historie měření:</h3>
-            <ion-list id="bmi-list"></ion-list>
+            <ion-list id="bmi-history-list"></ion-list>
         </ion-content>
     </ion-app>
 
@@ -39,62 +60,62 @@
         window.addEventListener('load', () => showHistory());
 
         function calculateBMI() {
-            const weight = parseFloat(document.getElementById('bmi-weight').value);
-            const heightCm = parseFloat(document.getElementById('bmi-height').value);
+            // Získání hodnot z komponent
+            const weight = parseFloat(document.getElementById('range-weight').value);
+            const heightCm = parseFloat(document.getElementById('range-height').value);
+            const age = document.getElementById('age').value;
+            const gender = document.getElementById('gender').value;
 
-            if (!weight || !heightCm) {
-                alert("Vyplňte prosím obě hodnoty!");
-                return;
-            }
-
-            // Výpočet BMI: váha / (výška v metrech)^2
+            // Výpočet
             const heightM = heightCm / 100;
             const bmi = (weight / (heightM * heightM)).toFixed(1);
 
-            // Určení kategorie
+            // Kategorie
             let category = "Normální";
             let color = "success";
             if (bmi < 18.5) { color = "warning"; category = "Podváha"; }
             else if (bmi >= 25 && bmi < 30) { color = "warning"; category = "Nadváha"; }
             else if (bmi >= 30) { color = "danger"; category = "Obezita"; }
 
-            // Vytvoření objektu pro uložení
-            const bmiRecord = {
+            // Příprava OBJEKTU (Value)
+            const record = {
                 bmi: bmi,
                 category: category,
                 color: color,
                 weight: weight,
+                height: heightCm,
+                age: age,
+                gender: gender === "muz" ? "Muž" : "Žena",
                 date: new Date().toLocaleString('cs-CZ')
             };
 
-            // Uložení do Local Storage (Klíč: bmi_timestamp)
-            localStorage.setItem("bmi_" + Date.now(), JSON.stringify(bmiRecord));
-
-            // Vymazání polí a aktualizace seznamu
-            document.getElementById('bmi-weight').value = "";
-            document.getElementById('bmi-height').value = "";
+            // Uložení (Key:Value)
+            localStorage.setItem("pro_bmi_" + Date.now(), JSON.stringify(record));
+            
             showHistory();
         }
 
         function showHistory() {
-            const list = document.getElementById('bmi-list');
+            const list = document.getElementById('bmi-history-list');
             list.innerHTML = "";
 
-            // Projdeme úložiště a najdeme jen BMI záznamy
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (!key.startsWith("bmi_")) continue;
+            // Seřazení klíčů od nejnovějšího (bonus)
+            const keys = Object.keys(localStorage)
+                               .filter(k => k.startsWith("pro_bmi_"))
+                               .sort().reverse();
 
-                let data = JSON.parse(localStorage.getItem(key));
-
-                let item = document.createElement("ion-item-sliding");
-                item.innerHTML = `
+            keys.forEach(key => {
+                const data = JSON.parse(localStorage.getItem(key));
+                
+                const slidingItem = document.createElement("ion-item-sliding");
+                slidingItem.innerHTML = `
                     <ion-item>
                         <ion-label>
-                            <h2>BMI: <strong>${data.bmi}</strong> (${data.category})</h2>
-                            <p>Váha: ${data.weight} kg | ${data.date}</p>
+                            <h2><strong>${data.bmi}</strong> — ${data.category}</h2>
+                            <p>${data.gender}, ${data.age} let | ${data.weight}kg, ${data.height}cm</p>
+                            <small>${data.date}</small>
                         </ion-label>
-                        <ion-badge color="${data.color}" slot="end">${data.bmi}</ion-badge>
+                        <ion-badge color="${data.color}" slot="end">BMI</ion-badge>
                     </ion-item>
                     <ion-item-options side="end">
                         <ion-item-option color="danger" onclick="deleteEntry('${key}')">
@@ -102,8 +123,8 @@
                         </ion-item-option>
                     </ion-item-options>
                 `;
-                list.appendChild(item);
-            }
+                list.appendChild(slidingItem);
+            });
         }
 
         function deleteEntry(key) {
@@ -112,10 +133,9 @@
         }
 
         function clearHistory() {
-            if (confirm("Smazat všechna měření?")) {
-                // Smaže jen BMI záznamy, ostatní věci v LS nechá
+            if (confirm("Smazat všechna data o BMI?")) {
                 Object.keys(localStorage)
-                      .filter(k => k.startsWith("bmi_"))
+                      .filter(k => k.startsWith("pro_bmi_"))
                       .forEach(k => localStorage.removeItem(k));
                 showHistory();
             }
