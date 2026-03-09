@@ -54,17 +54,20 @@
                     </ion-item>
 
                     <ion-item lines="none">
-                        <ion-label>Váha: <b id="w-val">${data.weight}</b> kg</ion-label>
+                        <ion-label>Váha: <b id="w-val">80</b> kg</ion-label>
                     </ion-item>
-                    <ion-range id="range-weight" min="30" max="150" value="80" 
-                               onIonInput="document.getElementById('w-val').innerText = this.value">
+                    
+                    <ion-range id="range-weight" min="30" max="150" value="80" pin="true" onIonInput="document.getElementById('w-val').innerText = this.value">
+                    <ion-icon slot="start" name="fitness-outline"></ion-icon>
+                        
                     </ion-range>
 
                     <ion-item lines="none">
-                        <ion-label>Výška: <b id="h-val">${data.height}</b> cm</ion-label>
+                        <ion-label>Výška: <b id="h-val">180</b> cm</ion-label>
                     </ion-item>
-                    <ion-range id="range-height" min="100" max="220" value="180" color="success"
-                               onIonInput="document.getElementById('h-val').innerText = this.value">
+                    
+                    <ion-range id="range-height" min="100" max="220" value="180" pin="true" color="success" onIonInput="document.getElementById('h-val').innerText = this.value">
+                    <ion-icon slot="start" name="resize-outline"></ion-icon>
                     </ion-range>
 
                     <ion-button expand="block" shape="round" class="ion-margin-top" onclick="calculateBMI()">
