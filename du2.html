@@ -51,14 +51,14 @@
             
             if (input.value.trim() === "") return;
 
-            // Vytvoření objektu záznamu
+            
             const taskObject = {
                 name: input.value,
                 priority: select.value,
                 date: new Date().toLocaleString('cs-CZ')
             };
 
-            // Uložení jako JSON string
+            
             const key = "task_" + Date.now();
             localStorage.setItem(key, JSON.stringify(taskObject));
             
@@ -78,7 +78,7 @@
                 // Načtení a parsování JSONu
                 let taskData = JSON.parse(localStorage.getItem(key));
 
-                // Určení barvy podle priority
+                
                 let color = "medium";
                 if (taskData.priority === "high") color = "danger";
                 if (taskData.priority === "low") color = "success";
